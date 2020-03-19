@@ -22,97 +22,102 @@ from speech_recognition.data.data_utils import lengths_to_encoder_padding_mask
 from fairseq.modules import TransformerDecoderLayer, TransformerEncoderLayer, VGGBlock
 
 
+def add_encoder_args(parser):
+    parser.add_argument(
+        "--input-feat-per-channel",
+        type=int,
+        metavar="N",
+        help="encoder input dimension per input channel",
+    )
+    parser.add_argument(
+        "--vggblock-enc-config",
+        type=str,
+        metavar="EXPR",
+        help="""
+        an array of tuples each containing the configuration of one vggblock:
+        [(out_channels,
+          conv_kernel_size,
+          pooling_kernel_size,
+          num_conv_layers,
+          use_layer_norm), ...])
+            """,
+    )
+    parser.add_argument(
+        "--transformer-enc-config",
+        type=str,
+        metavar="EXPR",
+        help=""""
+        a tuple containing the configuration of the encoder transformer layers
+        configurations:
+        [(input_dim,
+          num_heads,
+          ffn_dim,
+          normalize_before,
+          dropout,
+          attention_dropout,
+          relu_dropout), ...]')
+                """,
+    )
+    parser.add_argument(
+        "--enc-output-dim",
+        type=int,
+        metavar="N",
+        help="""
+        encoder output dimension, can be None. If specified, projecting the
+        transformer output to the specified dimension""",
+    )
+    parser.add_argument(
+        "--in-channels", type=int, metavar="N", help="number of encoder input channels",
+    )
+
+def add_decoder_args(parser):
+    parser.add_argument(
+        "--tgt-embed-dim",
+        type=int,
+        metavar="N",
+        help="embedding dimension of the decoder target tokens",
+    )
+    parser.add_argument(
+        "--transformer-dec-config",
+        type=str,
+        metavar="EXPR",
+        help="""
+        a tuple containing the configuration of the decoder transformer layers
+        configurations:
+        [(input_dim,
+          num_heads,
+          ffn_dim,
+          normalize_before,
+          dropout,
+          attention_dropout,
+          relu_dropout), ...]
+        """,
+    )
+    parser.add_argument(
+        "--conv-dec-config",
+        type=str,
+        metavar="EXPR",
+        help="""
+        an array of tuples for the decoder 1-D convolution config
+            [(out_channels, conv_kernel_size, use_layer_norm), ...]""",
+    )
+
 @register_model("asr_vggtransformer")
 class VGGTransformerModel(FairseqEncoderDecoderModel):
     """
     Transformers with convolutional context for ASR
     https://arxiv.org/abs/1904.11660
     """
+
     def __init__(self, encoder, decoder):
         super().__init__(encoder, decoder)
 
     @staticmethod
     def add_args(parser):
         """Add model-specific arguments to the parser."""
-        parser.add_argument(
-            "--input-feat-per-channel",
-            type=int,
-            metavar="N",
-            help="encoder input dimension per input channel",
-        )
-        parser.add_argument(
-            "--vggblock-enc-config",
-            type=str,
-            metavar="EXPR",
-            help="""
-    an array of tuples each containing the configuration of one vggblock:
-    [(out_channels,
-      conv_kernel_size,
-      pooling_kernel_size,
-      num_conv_layers,
-      use_layer_norm), ...])
-            """,
-        )
-        parser.add_argument(
-            "--transformer-enc-config",
-            type=str,
-            metavar="EXPR",
-            help=""""
-    a tuple containing the configuration of the encoder transformer layers
-    configurations:
-    [(input_dim,
-      num_heads,
-      ffn_dim,
-      normalize_before,
-      dropout,
-      attention_dropout,
-      relu_dropout), ...]')
-            """,
-        )
-        parser.add_argument(
-            "--enc-output-dim",
-            type=int,
-            metavar="N",
-            help="""
-    encoder output dimension, can be None. If specified, projecting the
-    transformer output to the specified dimension""",
-        )
-        parser.add_argument(
-            "--in-channels",
-            type=int,
-            metavar="N",
-            help="number of encoder input channels",
-        )
-        parser.add_argument(
-            "--tgt-embed-dim",
-            type=int,
-            metavar="N",
-            help="embedding dimension of the decoder target tokens",
-        )
-        parser.add_argument(
-            "--transformer-dec-config",
-            type=str,
-            metavar="EXPR",
-            help="""
-    a tuple containing the configuration of the decoder transformer layers
-    configurations:
-    [(input_dim,
-      num_heads,
-      ffn_dim,
-      normalize_before,
-      dropout,
-      attention_dropout,
-      relu_dropout), ...]
-            """,
-        )
-        parser.add_argument(
-            "--conv-dec-config",
-            type=str,
-            metavar="EXPR",
-            help="""
-    an array of tuples for the decoder 1-D convolution config
-        [(out_channels, conv_kernel_size, use_layer_norm), ...]""",
-        )
+        add_encoder_args(parser)
+        add_decoder_args(parser)
+
 
     @classmethod
     def build_encoder(cls, args, task):
@@ -598,18 +603,22 @@ class TransformerDecoder(FairseqIncrementalDecoder):
         self.layers = nn.ModuleList()
         if conv_config[-1][0] != transformer_config[0][0]:
             self.layers.append(Linear(conv_config[-1][0], transformer_config[0][0]))
-        self.layers.append(TransformerDecoderLayer(
-            prepare_transformer_decoder_params(*transformer_config[0])
-        ))
+        self.layers.append(
+            TransformerDecoderLayer(
+                prepare_transformer_decoder_params(*transformer_config[0])
+            )
+        )
 
         for i in range(1, len(transformer_config)):
             if transformer_config[i - 1][0] != transformer_config[i][0]:
                 self.layers.append(
                     Linear(transformer_config[i - 1][0], transformer_config[i][0])
                 )
-            self.layers.append(TransformerDecoderLayer(
-                prepare_transformer_decoder_params(*transformer_config[i])
-            ))
+            self.layers.append(
+                TransformerDecoderLayer(
+                    prepare_transformer_decoder_params(*transformer_config[i])
+                )
+            )
         self.fc_out = Linear(transformer_config[-1][0], vocab_size)
 
     def forward(self, prev_output_tokens, encoder_out=None, incremental_state=None):
@@ -818,6 +827,7 @@ def vggtransformer_small(args):
         args, "transformer_dec_config", "((512, 8, 2048, True, 0.15, 0.15, 0.15),) * 4"
     )
 
+
 @register_model_architecture("asr_vggtransformer", "vggtransformer_smaller")
 def vggtransformer_smaller(args):
     args.input_feat_per_channel = getattr(args, "input_feat_per_channel", 80)
@@ -871,5 +881,3 @@ def vggtransformer_base(args):
     #   - FC: 512*5000 = 256K (assuming vocab size 5K)
     # In total:
     #       ~65 M
-
-

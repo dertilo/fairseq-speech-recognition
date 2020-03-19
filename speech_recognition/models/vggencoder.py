@@ -1,7 +1,8 @@
 from fairseq.models import register_model, FairseqEncoderModel, \
     register_model_architecture
 from speech_recognition.models.vggtransformer import VGGTransformerEncoder, \
-    DEFAULT_ENC_VGGBLOCK_CONFIG, DEFAULT_ENC_TRANSFORMER_CONFIG, Linear
+    DEFAULT_ENC_VGGBLOCK_CONFIG, DEFAULT_ENC_TRANSFORMER_CONFIG, Linear, \
+    add_encoder_args
 
 
 class VGGTransformerEncoderOnly(VGGTransformerEncoder):
@@ -56,48 +57,7 @@ class VGGTransformerEncoderModel(FairseqEncoderModel):
     @staticmethod
     def add_args(parser):
         """Add model-specific arguments to the parser."""
-        parser.add_argument(
-            "--input-feat-per-channel",
-            type=int,
-            metavar="N",
-            help="encoder input dimension per input channel",
-        )
-        parser.add_argument(
-            "--vggblock-enc-config",
-            type=str,
-            metavar="EXPR",
-            help="""
-    an array of tuples each containing the configuration of one vggblock
-    [(out_channels, conv_kernel_size, pooling_kernel_size,num_conv_layers), ...]
-    """,
-        )
-        parser.add_argument(
-            "--transformer-enc-config",
-            type=str,
-            metavar="EXPR",
-            help="""
-    a tuple containing the configuration of the Transformer layers
-    configurations:
-    [(input_dim,
-      num_heads,
-      ffn_dim,
-      normalize_before,
-      dropout,
-      attention_dropout,
-      relu_dropout), ]""",
-        )
-        parser.add_argument(
-            "--enc-output-dim",
-            type=int,
-            metavar="N",
-            help="encoder output dimension, projecting the LSTM output",
-        )
-        parser.add_argument(
-            "--in-channels",
-            type=int,
-            metavar="N",
-            help="number of encoder input channels",
-        )
+        add_encoder_args(parser)
         parser.add_argument(
             "--transformer-context",
             type=str,
