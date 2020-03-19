@@ -42,13 +42,19 @@ def get_asr_dataset_from_json(data_json_path, tgt_dict):
         raise FileNotFoundError("Dataset not found: {}".format(data_json_path))
     with open(data_json_path, "rb") as f:
         data_samples = json.load(f)["utts"]
+        def alter_datum(d):
+            d[1]['input']['path']=d[1]['input']['path'].replace('/content/librispeech_raw','/content/librispeech') # TODO(tilo): for colab
+            return d
+        g = (alter_datum(d) for d in data_samples.items())
+        data_samples = [d for d in g if os.path.isfile(d[1]['input']['path'])]
         assert len(data_samples) != 0
         sorted_samples = sorted(
-            data_samples.items(),
+            data_samples,
             key=lambda sample: int(sample[1]["input"]["length_ms"]),
             reverse=True,
         )
         aud_paths = [s[1]["input"]["path"] for s in sorted_samples]
+        print('got %d audio-files'%len(aud_paths))
         ids = [s[0] for s in sorted_samples]
         speakers = []
         for s in sorted_samples:

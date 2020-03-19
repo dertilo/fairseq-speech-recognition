@@ -937,6 +937,41 @@ def vggtransformer_2(args):
     )
 
 
+@register_model_architecture("asr_vggtransformer", "vggtransformer_small")
+def vggtransformer_small(args):
+    args.input_feat_per_channel = getattr(args, "input_feat_per_channel", 80)
+    args.vggblock_enc_config = getattr(
+        args, "vggblock_enc_config", "[(64, 3, 2, 2, True), (128, 3, 2, 2, True)]"
+    )
+    args.transformer_enc_config = getattr(
+        args, "transformer_enc_config", "((512, 8, 2048, True, 0.15, 0.15, 0.15),) * 6"
+    )
+
+    args.enc_output_dim = getattr(args, "enc_output_dim", 512)
+    args.tgt_embed_dim = getattr(args, "tgt_embed_dim", 512)
+    args.conv_dec_config = getattr(args, "conv_dec_config", "((256, 3, True),) * 4")
+    args.transformer_dec_config = getattr(
+        args, "transformer_dec_config", "((512, 8, 2048, True, 0.15, 0.15, 0.15),) * 4"
+    )
+
+@register_model_architecture("asr_vggtransformer", "vggtransformer_smaller")
+def vggtransformer_smaller(args):
+    args.input_feat_per_channel = getattr(args, "input_feat_per_channel", 80)
+    args.vggblock_enc_config = getattr(
+        args, "vggblock_enc_config", "[(64, 3, 2, 2, True), (128, 3, 2, 2, True)]"
+    )
+    args.transformer_enc_config = getattr(
+        args, "transformer_enc_config", "((512, 8, 2048, True, 0.15, 0.15, 0.15),) * 3"
+    )
+
+    args.enc_output_dim = getattr(args, "enc_output_dim", 512)
+    args.tgt_embed_dim = getattr(args, "tgt_embed_dim", 512)
+    args.conv_dec_config = getattr(args, "conv_dec_config", "((256, 3, True),) * 4")
+    args.transformer_dec_config = getattr(
+        args, "transformer_dec_config", "((512, 8, 2048, True, 0.15, 0.15, 0.15),) * 2"
+    )
+
+
 @register_model_architecture("asr_vggtransformer", "vggtransformer_base")
 def vggtransformer_base(args):
     args.input_feat_per_channel = getattr(args, "input_feat_per_channel", 80)
@@ -1002,5 +1037,21 @@ def vggtransformer_enc_1(args):
         args,
         "transformer_enc_config",
         "((1024, 16, 4096, True, 0.15, 0.15, 0.15),) * 16",
+    )
+    args.enc_output_dim = getattr(args, "enc_output_dim", 1024)\
+
+@register_model_architecture("asr_vggtransformer_encoder", "vggtransformer_enc_small")
+def vggtransformer_enc_small(args):
+    # vggtransformer_1 is the same as vggtransformer_enc_big, except the number
+    # of layers is increased to 16
+    # keep it here for backward compatiablity purpose
+    args.input_feat_per_channel = getattr(args, "input_feat_per_channel", 80)
+    args.vggblock_enc_config = getattr(
+        args, "vggblock_enc_config", "[(64, 3, 2, 2, True), (128, 3, 2, 2, True)]"
+    )
+    args.transformer_enc_config = getattr(
+        args,
+        "transformer_enc_config",
+        "((1024, 16, 4096, True, 0.15, 0.15, 0.15),) * 6",
     )
     args.enc_output_dim = getattr(args, "enc_output_dim", 1024)
