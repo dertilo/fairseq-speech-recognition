@@ -10,8 +10,8 @@ import re
 import torch
 from fairseq.data import Dictionary
 from fairseq.tasks import FairseqTask, register_task
-from examples.speech_recognition.data import AsrDataset
-from examples.speech_recognition.data.replabels import replabel_symbol
+from speech_recognition.data import AsrDataset
+from speech_recognition.data.replabels import replabel_symbol
 
 
 def get_asr_dataset_from_json(data_json_path, tgt_dict):
@@ -80,9 +80,6 @@ class SpeechRecognitionTask(FairseqTask):
     def add_args(parser):
         """Add task-specific arguments to the parser."""
         parser.add_argument("data", help="path to data directory")
-        parser.add_argument(
-            "--silence-token", default="\u2581", help="token for silence (used by w2l)"
-        )
 
     def __init__(self, args, tgt_dict):
         super().__init__(args)
@@ -113,19 +110,6 @@ class SpeechRecognitionTask(FairseqTask):
         """
         data_json_path = os.path.join(self.args.data, "{}.json".format(split))
         self.datasets[split] = get_asr_dataset_from_json(data_json_path, self.tgt_dict)
-
-    def build_generator(self, args):
-        w2l_decoder = getattr(args, "w2l_decoder", None)
-        if w2l_decoder == "viterbi":
-            from examples.speech_recognition.w2l_decoder import W2lViterbiDecoder
-
-            return W2lViterbiDecoder(args, self.target_dictionary)
-        elif w2l_decoder == "kenlm":
-            from examples.speech_recognition.w2l_decoder import W2lKenLMDecoder
-
-            return W2lKenLMDecoder(args, self.target_dictionary)
-        else:
-            return super().build_generator(args)
 
     @property
     def target_dictionary(self):

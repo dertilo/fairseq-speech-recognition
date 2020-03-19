@@ -19,7 +19,7 @@ from fairseq.models import (
     register_model_architecture,
 )
 from fairseq.modules import LinearizedConvolution
-from examples.speech_recognition.data.data_utils import lengths_to_encoder_padding_mask
+from speech_recognition.data.data_utils import lengths_to_encoder_padding_mask
 from fairseq.modules import TransformerDecoderLayer, TransformerEncoderLayer, VGGBlock
 
 

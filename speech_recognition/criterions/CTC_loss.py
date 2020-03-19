@@ -13,8 +13,8 @@ import torch
 import torch.nn.functional as F
 from fairseq import utils
 from fairseq.criterions import FairseqCriterion, register_criterion
-from examples.speech_recognition.data.data_utils import encoder_padding_mask_to_lengths
-from examples.speech_recognition.utils.wer_utils import Code, EditDistance, Token
+from speech_recognition.data.data_utils import encoder_padding_mask_to_lengths
+from speech_recognition.utils.wer_utils import Code, EditDistance, Token
 
 
 logger = logging.getLogger(__name__)

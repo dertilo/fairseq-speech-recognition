@@ -44,11 +44,6 @@ output units",
     parser.add_argument(
         "--rnnt_len_penalty", default=-0.5, help="rnnt length penalty on word level"
     )
-    parser.add_argument(
-        "--w2l-decoder", choices=["viterbi", "kenlm"], help="use a w2l decoder"
-    )
-    parser.add_argument("--lexicon", help="lexicon for w2l decoder")
-    parser.add_argument("--kenlm-model", help="kenlm model for w2l decoder")
     parser.add_argument("--beam-threshold", type=float, default=25.0)
     parser.add_argument("--word-score", type=float, default=1.0)
     parser.add_argument("--unk-weight", type=float, default=-math.inf)
@@ -191,11 +186,6 @@ def main(args):
         task=task,
     )
     optimize_models(args, use_cuda, models)
-
-    # hack to pass transitions to W2lDecoder
-    if args.criterion == "asg_loss":
-        trans = criterions[0].asg.trans.data
-        args.asg_transitions = torch.flatten(trans).tolist()
 
     # Load dataset (possibly sharded)
     itr = get_dataset_itr(args, task)
