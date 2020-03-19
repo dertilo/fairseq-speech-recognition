@@ -12,9 +12,9 @@ import logging
 import math
 import os
 
-import sentencepiece as spm
 import torch
 from fairseq import checkpoint_utils, options, utils, tasks
+from fairseq.data import Dictionary
 from fairseq.logging import meters, progress_bar
 from fairseq.utils import import_user_module
 
@@ -77,18 +77,21 @@ def get_dataset_itr(args, task):
 
 
 def process_predictions(
-    args, hypos, sp, tgt_dict, target_tokens, res_files, speaker, id
+    args, hypos, sp, tgt_dict:Dictionary, target_tokens, res_files, speaker, id
 ):
     for hypo in hypos[: min(len(hypos), args.nbest)]:
         hyp_pieces = tgt_dict.string(hypo["tokens"].int().cpu())
-        hyp_words = sp.DecodePieces(hyp_pieces.split())
+        # hyp_words = sp.DecodePieces(hyp_pieces.split())
+        hyp_words = hyp_pieces.replace(' ','').replace('_',' ')
+        print(hyp_words)
         print(
             "{} ({}-{})".format(hyp_pieces, speaker, id), file=res_files["hypo.units"]
         )
         print("{} ({}-{})".format(hyp_words, speaker, id), file=res_files["hypo.words"])
 
         tgt_pieces = tgt_dict.string(target_tokens)
-        tgt_words = sp.DecodePieces(tgt_pieces.split())
+        # tgt_words = sp.DecodePieces(tgt_pieces.split())
+        tgt_words = tgt_pieces.replace(' ','').replace('_',' ')
         print("{} ({}-{})".format(tgt_pieces, speaker, id), file=res_files["ref.units"])
         print("{} ({}-{})".format(tgt_words, speaker, id), file=res_files["ref.words"])
         # only score top hypothesis
@@ -130,6 +133,10 @@ def load_models_and_criterions(filenames, arg_overrides=None, task=None):
 
         # build model for ensemble
         model = task.build_model(args)
+        # model.decoder.load_state_dict(state['model'],strict=False)
+        # model_state = {k: v for k, v in state['model'].items() if 'encoder' not in k}
+        # print(model_state.keys())
+        # model.load_state_dict(model_state, strict=False)
         model.load_state_dict(state["model"], strict=True)
         models.append(model)
 
@@ -205,9 +212,9 @@ def main(args):
     if not os.path.exists(args.results_path):
         os.makedirs(args.results_path)
 
-    sp = spm.SentencePieceProcessor()
-    sp.Load(os.path.join(args.data, "spm.model"))
-
+    # sp = spm.SentencePieceProcessor()
+    # sp.Load(os.path.join(args.data, "spm.model"))
+    sp = None
     res_files = prepare_result_files(args)
     wps_meter = meters.TimeMeter()
     for sample in progress:
@@ -260,4 +267,11 @@ def cli_main():
 
 
 if __name__ == "__main__":
+    # s = 'examples/speech_recognition/infer.py /home/tilo/data/asr_data/fairseq_librispeech --task speech_recognition --max-tokens 25000 --nbest 1 --path /tmp/checkpoint_last.pt --beam 20 --results-path inference_results --batch-size 2 --gen-subset valid --user-dir examples/speech_recognition/'
+    # s = 'examples/speech_recognition/infer.py /home/users/t/tilo-himmelsbach/data/asr_data/fairseq_librispeech --task speech_recognition --max-tokens 25000 --nbest 1 --path /home/users/t/tilo-himmelsbach/fairseq/fairseq_models/checkpoint_last.pt --beam 20 --results-path inference_results --batch-size 40 --gen-subset valid --user-dir examples/speech_recognition/'
+
+    # HOME = os.environ['HOME']
+    # data_path = HOME#+'/hpc'
+    # s = 'examples/speech_recognition/infer.py {data_path}/data/asr_data/fairseq_preprocessed_librispeech --task speech_recognition --temperature 1.0 --max-tokens 5000 --nbest 3 --path {data_path}/data/asr_data/librispeech_stt_1.pt --beam 20 --results-path inference_results --batch-size 2 --gen-subset valid --user-dir examples/speech_recognition/'.format(data_path=data_path)
+    # sys.argv= s.split(' ')
     cli_main()
