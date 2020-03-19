@@ -1,7 +1,7 @@
-from fairseq.models import register_model, FairseqEncoderModel
+from fairseq.models import register_model, FairseqEncoderModel, \
+    register_model_architecture
 from speech_recognition.models.vggtransformer import VGGTransformerEncoder, \
-    DEFAULT_ENC_VGGBLOCK_CONFIG, DEFAULT_ENC_TRANSFORMER_CONFIG, Linear, \
-    base_architecture_enconly
+    DEFAULT_ENC_VGGBLOCK_CONFIG, DEFAULT_ENC_TRANSFORMER_CONFIG, Linear
 
 
 class VGGTransformerEncoderOnly(VGGTransformerEncoder):
@@ -138,3 +138,52 @@ class VGGTransformerEncoderModel(FairseqEncoderModel):
         lprobs = lprobs.transpose(0, 1).contiguous()
         lprobs.batch_first = True
         return lprobs
+
+
+
+# CTC models
+def base_architecture_enconly(args):
+    args.input_feat_per_channel = getattr(args, "input_feat_per_channel", 40)
+    args.vggblock_enc_config = getattr(
+        args, "vggblock_enc_config", "[(32, 3, 2, 2, True)] * 2"
+    )
+    args.transformer_enc_config = getattr(
+        args, "transformer_enc_config", "((256, 4, 1024, True, 0.2, 0.2, 0.2),) * 2"
+    )
+    args.enc_output_dim = getattr(args, "enc_output_dim", 512)
+    args.in_channels = getattr(args, "in_channels", 1)
+    args.transformer_context = getattr(args, "transformer_context", "None")
+    args.transformer_sampling = getattr(args, "transformer_sampling", "None")
+
+
+@register_model_architecture("asr_vggtransformer_encoder", "vggtransformer_enc_1")
+def vggtransformer_enc_1(args):
+    # vggtransformer_1 is the same as vggtransformer_enc_big, except the number
+    # of layers is increased to 16
+    # keep it here for backward compatiablity purpose
+    args.input_feat_per_channel = getattr(args, "input_feat_per_channel", 80)
+    args.vggblock_enc_config = getattr(
+        args, "vggblock_enc_config", "[(64, 3, 2, 2, True), (128, 3, 2, 2, True)]"
+    )
+    args.transformer_enc_config = getattr(
+        args,
+        "transformer_enc_config",
+        "((1024, 16, 4096, True, 0.15, 0.15, 0.15),) * 16",
+    )
+    args.enc_output_dim = getattr(args, "enc_output_dim", 1024)\
+
+@register_model_architecture("asr_vggtransformer_encoder", "vggtransformer_enc_small")
+def vggtransformer_enc_small(args):
+    # vggtransformer_1 is the same as vggtransformer_enc_big, except the number
+    # of layers is increased to 16
+    # keep it here for backward compatiablity purpose
+    args.input_feat_per_channel = getattr(args, "input_feat_per_channel", 80)
+    args.vggblock_enc_config = getattr(
+        args, "vggblock_enc_config", "[(64, 3, 2, 2, True), (128, 3, 2, 2, True)]"
+    )
+    args.transformer_enc_config = getattr(
+        args,
+        "transformer_enc_config",
+        "((1024, 16, 4096, True, 0.15, 0.15, 0.15),) * 6",
+    )
+    args.enc_output_dim = getattr(args, "enc_output_dim", 1024)
