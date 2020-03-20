@@ -76,11 +76,13 @@ def compute_ctc_uer(logprobs, targets, input_lengths, target_lengths, blank_idx)
 
 @register_criterion("ctc_loss")
 class CTCCriterion(FairseqCriterion):
-    def __init__(self, args, task):
-        super().__init__(args, task)
+    def __init__(self, task,sentence_avg,use_source_side_sample_size):
+        super().__init__(task)
         self.blank_idx = task.target_dictionary.index("<ctc_blank>")
         self.pad_idx = task.target_dictionary.pad()
         self.task = task
+        self.sentence_avg = sentence_avg
+        self.use_source_side_sample_size = use_source_side_sample_size
 
     @staticmethod
     def add_args(parser):
@@ -152,10 +154,10 @@ class CTCCriterion(FairseqCriterion):
             lprobs, targets, input_lengths, target_lengths, self.blank_idx
         )
 
-        if self.args.sentence_avg:
+        if self.sentence_avg:
             sample_size = sample["target"].size(0)
         else:
-            if self.args.use_source_side_sample_size:
+            if self.use_source_side_sample_size:
                 sample_size = torch.sum(input_lengths).item()
             else:
                 sample_size = sample["ntokens"]
