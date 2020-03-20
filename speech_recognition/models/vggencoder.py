@@ -1,8 +1,8 @@
 from fairseq.models import register_model, FairseqEncoderModel, \
     register_model_architecture
 from speech_recognition.models.vggtransformer import VGGTransformerEncoder, \
-    DEFAULT_ENC_VGGBLOCK_CONFIG, DEFAULT_ENC_TRANSFORMER_CONFIG, Linear, \
-    add_encoder_args
+    DEFAULT_ENC_VGGBLOCK_CONFIG, DEFAULT_ENC_TRANSFORMER_CONFIG, add_encoder_args
+from speech_recognition.models.asr_models_common import Linear
 
 
 class VGGTransformerEncoderOnly(VGGTransformerEncoder):
@@ -144,6 +144,6 @@ def vggtransformer_enc_small(args):
     args.transformer_enc_config = getattr(
         args,
         "transformer_enc_config",
-        "((1024, 16, 4096, True, 0.15, 0.15, 0.15),) * 6",
+        "((512, 8, 2048, True, 0.15, 0.15, 0.15),) * 3",
     )
     args.enc_output_dim = getattr(args, "enc_output_dim", 1024)
