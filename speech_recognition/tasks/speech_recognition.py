@@ -6,6 +6,7 @@
 import json
 import os
 import re
+import socket
 
 import torch
 from fairseq.data import Dictionary
@@ -42,8 +43,13 @@ def get_asr_dataset_from_json(data_json_path, tgt_dict):
         raise FileNotFoundError("Dataset not found: {}".format(data_json_path))
     with open(data_json_path, "rb") as f:
         data_samples = json.load(f)["utts"]
+        hostname = socket.gethostname()
+        HOME = os.environ['HOME']
         def alter_datum(d):
-            d[1]['input']['path']=d[1]['input']['path'].replace('/content/librispeech_raw','/content/librispeech') # TODO(tilo): for colab
+            if hostname == 'tilo-ThinkPad-X1-Carbon-6th':
+                d[1]['input']['path']=d[1]['input']['path'].replace('/content/librispeech_raw',HOME+'/data/asr_data')
+            else:
+                d[1]['input']['path']=d[1]['input']['path'].replace('/content/librispeech_raw','/content/librispeech') # TODO(tilo): for colab
             return d
         g = (alter_datum(d) for d in data_samples.items())
         data_samples = [d for d in g if os.path.isfile(d[1]['input']['path'])]
