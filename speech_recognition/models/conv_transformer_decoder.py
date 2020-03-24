@@ -44,6 +44,38 @@ def prepare_transformer_decoder_params(
     args.decoder_ffn_embed_dim = ffn_dim
     return args
 
+def add_decoder_args(parser):
+    parser.add_argument(
+        "--tgt-embed-dim",
+        type=int,
+        metavar="N",
+        help="embedding dimension of the decoder target tokens",
+    )
+    parser.add_argument(
+        "--transformer-dec-config",
+        type=str,
+        metavar="EXPR",
+        help="""
+        a tuple containing the configuration of the decoder transformer layers
+        configurations:
+        [(input_dim,
+          num_heads,
+          ffn_dim,
+          normalize_before,
+          dropout,
+          attention_dropout,
+          relu_dropout), ...]
+        """,
+    )
+    parser.add_argument(
+        "--conv-dec-config",
+        type=str,
+        metavar="EXPR",
+        help="""
+        an array of tuples for the decoder 1-D convolution config
+            [(out_channels, conv_kernel_size, use_layer_norm), ...]""",
+    )
+
 class ConvTransformerDecoder(FairseqIncrementalDecoder):
     """
     Transformer decoder consisting of *args.decoder_layers* layers. Each layer
