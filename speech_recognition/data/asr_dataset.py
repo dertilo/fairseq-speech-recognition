@@ -77,7 +77,8 @@ class AsrDataset(FairseqDataset):
             frame_shift=self.frame_shift
         )
         output_cmvn = data_utils.apply_mv_norm(output)
-
+        # tgt_item = [t if t in self.tgt_dict.indices.values() else self.tgt_dict.unk() for t in tgt_item]
+        assert max(tgt_item)<len(self.tgt_dict)
         return {"id": index, "data": [output_cmvn.detach(), tgt_item]}
 
     def __len__(self):
