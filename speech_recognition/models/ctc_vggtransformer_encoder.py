@@ -1,7 +1,8 @@
 from fairseq.models import register_model, FairseqEncoderModel, \
     register_model_architecture
-from speech_recognition.models.vggtransformer import VGGTransformerEncoder, \
-    DEFAULT_ENC_VGGBLOCK_CONFIG, DEFAULT_ENC_TRANSFORMER_CONFIG, add_encoder_args
+from speech_recognition.models.vggtransformer import DEFAULT_ENC_VGGBLOCK_CONFIG, DEFAULT_ENC_TRANSFORMER_CONFIG
+from speech_recognition.models.vgg_transformer_encoder import add_encoder_args, \
+    VGGTransformerEncoder
 from speech_recognition.models.asr_models_common import Linear
 
 
