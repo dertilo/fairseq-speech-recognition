@@ -48,6 +48,8 @@ def get_asr_dataset_from_json(data_json_path, tgt_dict):
         def alter_datum(d):
             if hostname == 'tilo-ThinkPad-X1-Carbon-6th':
                 d[1]['input']['path']=d[1]['input']['path'].replace('/content/librispeech_raw',HOME+'/data/asr_data')
+            elif 'gpu' in hostname:
+                pass
             else:
                 d[1]['input']['path']=d[1]['input']['path'].replace('/content/librispeech_raw','/content/librispeech') # TODO(tilo): for colab
             return d
@@ -76,7 +78,7 @@ def get_asr_dataset_from_json(data_json_path, tgt_dict):
         return AsrDataset(aud_paths, frame_sizes, tgt, tgt_dict, ids, speakers)
 
 
-@register_task("speech_recognition")
+@register_task("tilo_speech_recognition")
 class SpeechRecognitionTask(FairseqTask):
     """
     Task for training speech recognition model.

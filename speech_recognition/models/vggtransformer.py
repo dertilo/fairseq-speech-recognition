@@ -2,18 +2,47 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+from argparse import Namespace
 
 from fairseq.models import (
     FairseqEncoderDecoderModel,
     register_model,
     register_model_architecture,
 )
+from fairseq.models.fairseq_encoder import EncoderOut
+from fairseq.models.transformer import TransformerDecoder, Embedding
+from fairseq.models.transformer_lm import base_lm_architecture, \
+    DEFAULT_MAX_TARGET_POSITIONS
 from speech_recognition.models.asr_models_common import DEFAULT_DEC_CONV_CONFIG
 from speech_recognition.models.conv_transformer_decoder import ConvTransformerDecoder, \
     add_decoder_args
 from speech_recognition.models.vgg_transformer_encoder import add_encoder_args, \
     VGGTransformerEncoder, DEFAULT_ENC_VGGBLOCK_CONFIG, DEFAULT_ENC_TRANSFORMER_CONFIG
 
+class ASRTransformerEncoder(VGGTransformerEncoder):
+
+    def forward(self, src_tokens, src_lengths, **kwargs):
+        d =  super().forward(src_tokens, src_lengths, **kwargs)
+        epm = d.get('encoder_padding_mask', None)
+        epm = epm.t() if epm is not None else None
+        return EncoderOut(
+            encoder_out=d['encoder_out'],  # T x B x C
+            encoder_padding_mask=epm,  # B x T
+            encoder_embedding=None,  # B x T x C
+            encoder_states=None,  # List[T x B x C]
+        )
+
+class ASRTransformerDecoderWrapper(TransformerDecoder):
+    def __init__(self, dictionary):
+        args = Namespace()
+        base_lm_architecture(args)
+        args.decoder_layerdrop=0
+        args.max_target_positions = getattr(args, 'tokens_per_sample',DEFAULT_MAX_TARGET_POSITIONS)
+
+        num_embeddings = len(dictionary)
+        padding_idx = dictionary.pad()
+        emb = Embedding(num_embeddings, args.decoder_embed_dim, padding_idx)
+        super().__init__(args, dictionary, emb, False)
 
 @register_model("asr_vggtransformer")
 class VGGTransformerModel(FairseqEncoderDecoderModel):
@@ -34,7 +63,7 @@ class VGGTransformerModel(FairseqEncoderDecoderModel):
 
     @classmethod
     def build_encoder(cls, args, task):
-        return VGGTransformerEncoder(
+        return ASRTransformerEncoder(
             input_feat_per_channel=args.input_feat_per_channel,
             vggblock_config=eval(args.vggblock_enc_config),
             transformer_config=eval(args.transformer_enc_config),
@@ -44,12 +73,8 @@ class VGGTransformerModel(FairseqEncoderDecoderModel):
 
     @classmethod
     def build_decoder(cls, args, task):
-        return ConvTransformerDecoder(
+        return ASRTransformerDecoderWrapper(
             dictionary=task.target_dictionary,
-            embed_dim=args.tgt_embed_dim,
-            transformer_config=eval(args.transformer_dec_config),
-            conv_config=eval(args.conv_dec_config),
-            encoder_output_dim=args.enc_output_dim,
         )
 
     @classmethod
