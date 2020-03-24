@@ -269,9 +269,9 @@ def cli_main():
 if __name__ == "__main__":
     # s = 'examples/speech_recognition/infer.py /home/tilo/data/asr_data/fairseq_librispeech --task speech_recognition --max-tokens 25000 --nbest 1 --path /tmp/checkpoint_last.pt --beam 20 --results-path inference_results --batch-size 2 --gen-subset valid --user-dir examples/speech_recognition/'
     # s = 'examples/speech_recognition/infer.py /home/users/t/tilo-himmelsbach/data/asr_data/fairseq_librispeech --task speech_recognition --max-tokens 25000 --nbest 1 --path /home/users/t/tilo-himmelsbach/fairseq/fairseq_models/checkpoint_last.pt --beam 20 --results-path inference_results --batch-size 40 --gen-subset valid --user-dir examples/speech_recognition/'
-
-    # HOME = os.environ['HOME']
-    # data_path = HOME#+'/hpc'
-    # s = 'examples/speech_recognition/infer.py {data_path}/data/asr_data/fairseq_preprocessed_librispeech --task speech_recognition --temperature 1.0 --max-tokens 5000 --nbest 3 --path {data_path}/data/asr_data/librispeech_stt_1.pt --beam 20 --results-path inference_results --batch-size 2 --gen-subset valid --user-dir examples/speech_recognition/'.format(data_path=data_path)
-    # sys.argv= s.split(' ')
+    import sys
+    HOME = os.environ['HOME']
+    data_path = HOME#+'/hpc'
+    s = 'examples/speech_recognition/infer.py {data_path}/data/asr_data/fairseq_preprocessed_librispeech --task speech_recognition --temperature 1.0 --max-tokens 5000 --nbest 3 --path {data_path}/data/asr_data/checkpoint3.pt --beam 5 --results-path inference_results --batch-size 2 --gen-subset valid --user-dir /home/tilo/code/SPEECH/fairseq-speech-recognition/speech_recognition/'.format(data_path=data_path)
+    sys.argv= s.split(' ')
     cli_main()
