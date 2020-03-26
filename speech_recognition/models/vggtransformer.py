@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 from argparse import Namespace
+
+import torch
 import torch.nn as nn
 from fairseq import checkpoint_utils
 from fairseq.models import (
@@ -42,10 +44,10 @@ class ASRTransformerEncoder(VGGTransformerEncoder):
         self.wav2vec_model = model
 
     def forward(self, x, src_lengths, **kwargs):
-
         z = self.wav2vec_model.feature_extractor(x.squeeze())
         c = self.wav2vec_model.feature_aggregator(z).permute(0,2,1)
-
+        subsample_factor = x.shape[1]/c.shape[1]
+        src_lengths = torch.ceil(src_lengths /subsample_factor).type(torch.int64)
         d =  super().forward(c, src_lengths, **kwargs)
         epm = d.get('encoder_padding_mask', None)
         epm = epm.t() if epm is not None else None
