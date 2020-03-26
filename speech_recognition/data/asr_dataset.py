@@ -34,7 +34,8 @@ class AsrDataset(FairseqDataset):
     def __init__(
         self, aud_paths, aud_durations_ms, tgt,
         tgt_dict, ids, speakers,
-        num_mel_bins=80, frame_length=25.0, frame_shift=10.0
+        num_mel_bins=80, frame_length=25.0, frame_shift=10.0,
+        feature_type = 'fbank'
     ):
         assert frame_length > 0
         assert frame_shift > 0
@@ -57,6 +58,7 @@ class AsrDataset(FairseqDataset):
         self.num_mel_bins = num_mel_bins
         self.frame_length = frame_length
         self.frame_shift = frame_shift
+        self.feature_type = feature_type
 
         self.s2s_collater = Seq2SeqCollater(
             0, 1, pad_index=self.tgt_dict.pad(),
@@ -70,7 +72,12 @@ class AsrDataset(FairseqDataset):
         if not os.path.exists(path):
             raise FileNotFoundError("Audio file not found: {}".format(path))
         sound, sample_rate = torchaudio.load_wav(path)
-        features = self._fbank_features(sound)
+        if self.feature_type == 'fbank':
+            features = self._fbank_features(sound)
+        elif self.feature_type == 'wave':
+            features = sound
+        else:
+            raise NotImplementedError
         # tgt_item = [t if t in self.tgt_dict.indices.values() else self.tgt_dict.unk() for t in tgt_item]
         assert max(tgt_item)<len(self.tgt_dict)
         return {"id": index, "data": [features, tgt_item]}

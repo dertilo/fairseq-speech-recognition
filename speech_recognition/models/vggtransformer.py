@@ -14,16 +14,38 @@ from fairseq.models.fairseq_encoder import EncoderOut
 from fairseq.models.transformer import TransformerDecoder, Embedding
 from fairseq.models.transformer_lm import base_lm_architecture, \
     DEFAULT_MAX_TARGET_POSITIONS
+from fairseq.models.wav2vec import Wav2VecModel
 from speech_recognition.models.asr_models_common import DEFAULT_DEC_CONV_CONFIG
 from speech_recognition.models.conv_transformer_decoder import ConvTransformerDecoder, \
     add_decoder_args
 from speech_recognition.models.vgg_transformer_encoder import add_encoder_args, \
     VGGTransformerEncoder, DEFAULT_ENC_VGGBLOCK_CONFIG, DEFAULT_ENC_TRANSFORMER_CONFIG
+import os
+HOME = os.environ['HOME']
 
 class ASRTransformerEncoder(VGGTransformerEncoder):
 
-    def forward(self, src_tokens, src_lengths, **kwargs):
-        d =  super().forward(src_tokens, src_lengths, **kwargs)
+    def __init__(self, input_feat_per_channel,
+                 vggblock_config=DEFAULT_ENC_VGGBLOCK_CONFIG,
+                 transformer_config=DEFAULT_ENC_TRANSFORMER_CONFIG,
+                 encoder_output_dim=512, in_channels=1, transformer_context=None,
+                 transformer_sampling=None):
+        super().__init__(input_feat_per_channel, vggblock_config, transformer_config,
+                         encoder_output_dim, in_channels, transformer_context,
+                         transformer_sampling)
+        cp = checkpoint_utils.load_checkpoint_to_cpu(
+            HOME + '/data/fairseq-data/wav2vec_models/checkpoint_last.pt')
+        model = Wav2VecModel.build_model(cp['args'], task=None)
+        model.load_state_dict(cp['model'])
+        # model.eval()
+        self.wav2vec_model = model
+
+    def forward(self, x, src_lengths, **kwargs):
+
+        z = self.wav2vec_model.feature_extractor(x)
+        c = self.wav2vec_model.feature_aggregator(z).squeeze().t()
+
+        d =  super().forward(c, src_lengths, **kwargs)
         epm = d.get('encoder_padding_mask', None)
         epm = epm.t() if epm is not None else None
         return EncoderOut(
@@ -242,7 +264,7 @@ def vggtransformer_base(args):
 
 @register_model_architecture("asr_vggtransformer", "vggtransformer_66")
 def vggtransformer_66(args):
-    args.input_feat_per_channel = getattr(args, "input_feat_per_channel", 80)
+    args.input_feat_per_channel = getattr(args, "input_feat_per_channel", 512)
     args.vggblock_enc_config = getattr(
         args, "vggblock_enc_config", "[(64, 3, 2, 2, True), (128, 3, 2, 2, True)]"
     )

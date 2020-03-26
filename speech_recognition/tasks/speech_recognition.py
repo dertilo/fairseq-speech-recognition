@@ -75,7 +75,7 @@ def get_asr_dataset_from_json(data_json_path, tgt_dict):
         ]
         # append eos
         tgt = [[*t, tgt_dict.eos()] for t in tgt]
-        return AsrDataset(aud_paths, frame_sizes, tgt, tgt_dict, ids, speakers)
+        return AsrDataset(aud_paths, frame_sizes, tgt, tgt_dict, ids, speakers,feature_type='wave')
 
 
 @register_task("tilo_speech_recognition")
