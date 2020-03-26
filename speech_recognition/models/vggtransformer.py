@@ -33,8 +33,9 @@ class ASRTransformerEncoder(VGGTransformerEncoder):
         super().__init__(input_feat_per_channel, vggblock_config, transformer_config,
                          encoder_output_dim, in_channels, transformer_context,
                          transformer_sampling)
-        cp = checkpoint_utils.load_checkpoint_to_cpu(
-            HOME + '/data/fairseq-data/wav2vec_models/checkpoint_last.pt')
+        wav2vec_checkpoint = HOME + '/data/fairseq-data/wav2vec_models/checkpoint_last.pt'
+        # wav2vec_checkpoint = '/tmp/checkpoint_last.pt'
+        cp = checkpoint_utils.load_checkpoint_to_cpu(wav2vec_checkpoint)
         model = Wav2VecModel.build_model(cp['args'], task=None)
         model.load_state_dict(cp['model'])
         # model.eval()
@@ -42,8 +43,8 @@ class ASRTransformerEncoder(VGGTransformerEncoder):
 
     def forward(self, x, src_lengths, **kwargs):
 
-        z = self.wav2vec_model.feature_extractor(x)
-        c = self.wav2vec_model.feature_aggregator(z).squeeze().t()
+        z = self.wav2vec_model.feature_extractor(x.squeeze())
+        c = self.wav2vec_model.feature_aggregator(z).permute(0,2,1)
 
         d =  super().forward(c, src_lengths, **kwargs)
         epm = d.get('encoder_padding_mask', None)
