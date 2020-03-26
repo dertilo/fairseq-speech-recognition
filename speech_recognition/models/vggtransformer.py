@@ -48,6 +48,7 @@ class ASRTransformerEncoder(VGGTransformerEncoder):
         c = self.wav2vec_model.feature_aggregator(z).permute(0,2,1)
         subsample_factor = x.shape[1]/c.shape[1]
         src_lengths = torch.ceil(src_lengths /subsample_factor).type(torch.int64)
+        src_lengths = torch.min(torch.tensor(c.shape[1]),src_lengths)
         d =  super().forward(c, src_lengths, **kwargs)
         epm = d.get('encoder_padding_mask', None)
         epm = epm.t() if epm is not None else None
