@@ -9,6 +9,8 @@ from fairseq.data import FairseqDataset
 
 from . import data_utils
 from .collaters import Seq2SeqCollater
+import torchaudio
+import torchaudio.compliance.kaldi as kaldi
 
 
 class AsrDataset(FairseqDataset):
@@ -62,24 +64,26 @@ class AsrDataset(FairseqDataset):
         )
 
     def __getitem__(self, index):
-        import torchaudio
-        import torchaudio.compliance.kaldi as kaldi
         tgt_item = self.tgt[index] if self.tgt is not None else None
 
         path = self.aud_paths[index]
         if not os.path.exists(path):
             raise FileNotFoundError("Audio file not found: {}".format(path))
         sound, sample_rate = torchaudio.load_wav(path)
+        features = self._fbank_features(sound)
+        # tgt_item = [t if t in self.tgt_dict.indices.values() else self.tgt_dict.unk() for t in tgt_item]
+        assert max(tgt_item)<len(self.tgt_dict)
+        return {"id": index, "data": [features, tgt_item]}
+
+    def _fbank_features(self, sound):
         output = kaldi.fbank(
             sound,
             num_mel_bins=self.num_mel_bins,
             frame_length=self.frame_length,
             frame_shift=self.frame_shift
         )
-        output_cmvn = data_utils.apply_mv_norm(output)
-        # tgt_item = [t if t in self.tgt_dict.indices.values() else self.tgt_dict.unk() for t in tgt_item]
-        assert max(tgt_item)<len(self.tgt_dict)
-        return {"id": index, "data": [output_cmvn.detach(), tgt_item]}
+        output_cmvn = data_utils.apply_mv_norm(output).detach()
+        return output_cmvn
 
     def __len__(self):
         return len(self.aud_paths)
