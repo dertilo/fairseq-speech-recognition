@@ -75,7 +75,7 @@ class AsrDataset(FairseqDataset):
         if self.feature_type == 'fbank':
             features = self._fbank_features(sound)
         elif self.feature_type == 'wave':
-            features = sound
+            features = sound.t()
         else:
             raise NotImplementedError
         # tgt_item = [t if t in self.tgt_dict.indices.values() else self.tgt_dict.unk() for t in tgt_item]
