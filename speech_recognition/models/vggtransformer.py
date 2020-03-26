@@ -25,6 +25,12 @@ from speech_recognition.models.vgg_transformer_encoder import add_encoder_args, 
 import os
 HOME = os.environ['HOME']
 
+
+def freeze_module_params(m):
+    if m is not None:
+        for p in m.parameters():
+            p.requires_grad = False
+
 class ASRTransformerEncoder(VGGTransformerEncoder):
 
     def __init__(self, input_feat_per_channel,
@@ -40,15 +46,17 @@ class ASRTransformerEncoder(VGGTransformerEncoder):
         cp = checkpoint_utils.load_checkpoint_to_cpu(wav2vec_checkpoint)
         model = Wav2VecModel.build_model(cp['args'], task=None)
         model.load_state_dict(cp['model'])
-        # model.eval()
+        freeze_module_params(model)
         self.wav2vec_model = model
 
     def forward(self, x, src_lengths, **kwargs):
-        z = self.wav2vec_model.feature_extractor(x.squeeze())
-        c = self.wav2vec_model.feature_aggregator(z).permute(0,2,1)
+        self.wav2vec_model.eval()
+        with torch.no_grad():
+            z = self.wav2vec_model.feature_extractor(x.squeeze())
+            c = self.wav2vec_model.feature_aggregator(z).permute(0,2,1)
         subsample_factor = x.shape[1]/c.shape[1]
         src_lengths = torch.ceil(src_lengths /subsample_factor).type(torch.int64)
-        src_lengths = torch.min(torch.tensor(c.shape[1]),src_lengths)
+        src_lengths = torch.min(torch.tensor(c.shape[1]).to(src_lengths.device),src_lengths)
         d =  super().forward(c, src_lengths, **kwargs)
         epm = d.get('encoder_padding_mask', None)
         epm = epm.t() if epm is not None else None
