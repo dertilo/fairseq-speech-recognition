@@ -3,7 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 from argparse import Namespace
-
+import torch.nn as nn
+from fairseq import checkpoint_utils
 from fairseq.models import (
     FairseqEncoderDecoderModel,
     register_model,
@@ -73,9 +74,21 @@ class VGGTransformerModel(FairseqEncoderDecoderModel):
 
     @classmethod
     def build_decoder(cls, args, task):
-        return ASRTransformerDecoderWrapper(
-            dictionary=task.target_dictionary,
-        )
+        decoder = ASRTransformerDecoderWrapper(task.target_dictionary)
+        print('loading language model checkpoint')
+        checkpoint_file = '/home/users/t/tilo-himmelsbach/data/fairseq-data/checkpoints/checkpoint20.pt'
+        # checkpoint_file = '/tmp/checkpoint20.pt'
+        state = checkpoint_utils.load_checkpoint_to_cpu(checkpoint_file, {'no_encoder_attn':False})
+        decoder_layers = {k.replace('decoder.',''):v for k,v in state['model'].items()}
+        decoder.load_state_dict(decoder_layers,strict=False)
+
+        # decoder = ConvTransformerDecoder(dictionary=task.target_dictionary,
+        #                                  embed_dim=args.tgt_embed_dim,
+        #                                  transformer_config=eval(
+        #                                      args.transformer_dec_config),
+        #                                  conv_config=eval(args.conv_dec_config),
+        #                                  encoder_output_dim=args.enc_output_dim, )
+        return decoder
 
     @classmethod
     def build_model(cls, args, task):
