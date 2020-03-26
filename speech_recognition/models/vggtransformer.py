@@ -76,7 +76,7 @@ class VGGTransformerModel(FairseqEncoderDecoderModel):
     def build_decoder(cls, args, task):
         decoder = ASRTransformerDecoderWrapper(task.target_dictionary)
         print('loading language model checkpoint')
-        checkpoint_file = '/home/users/t/tilo-himmelsbach/data/fairseq-data/checkpoints/checkpoint20.pt'
+        checkpoint_file = '/home/users/t/tilo-himmelsbach/data/fairseq-data/checkpoints/lm_librispeech/checkpoint20.pt'
         # checkpoint_file = '/tmp/checkpoint20.pt'
         state = checkpoint_utils.load_checkpoint_to_cpu(checkpoint_file, {'no_encoder_attn':False})
         decoder_layers = {k.replace('decoder.',''):v for k,v in state['model'].items()}
