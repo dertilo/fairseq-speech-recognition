@@ -15,7 +15,7 @@ from speech_recognition.data import AsrDataset
 from speech_recognition.data.replabels import replabel_symbol
 
 
-def get_asr_dataset_from_json(data_json_path, tgt_dict):
+def get_asr_dataset_from_json(data_json_path, tgt_dict,feature_type='fbank'):
     """
     Parse data json and create dataset.
     See scripts/asr_prep_json.py which pack json from raw files
@@ -75,7 +75,7 @@ def get_asr_dataset_from_json(data_json_path, tgt_dict):
         ]
         # append eos
         tgt = [[*t, tgt_dict.eos()] for t in tgt]
-        return AsrDataset(aud_paths, frame_sizes, tgt, tgt_dict, ids, speakers,feature_type='wave')
+        return AsrDataset(aud_paths, frame_sizes, tgt, tgt_dict, ids, speakers,feature_type=feature_type)
 
 
 @register_task("tilo_speech_recognition")
@@ -117,7 +117,8 @@ class SpeechRecognitionTask(FairseqTask):
             split (str): name of the split (e.g., train, valid, test)
         """
         data_json_path = os.path.join(self.args.data, "{}.json".format(split))
-        self.datasets[split] = get_asr_dataset_from_json(data_json_path, self.tgt_dict)
+        feature_type = 'wave' if 'wav2vec' in self.args.arch else 'fbank'
+        self.datasets[split] = get_asr_dataset_from_json(data_json_path, self.tgt_dict,feature_type)
 
     @property
     def target_dictionary(self):
