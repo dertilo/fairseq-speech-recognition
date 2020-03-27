@@ -49,12 +49,12 @@ class ASRTransformerEncoder(VGGTransformerEncoder):
         freeze_module_params(model)
         self.wav2vec_model = model
 
-    def forward(self, x, src_lengths, **kwargs):
+    def forward(self, src_tokens, src_lengths, **kwargs):
         self.wav2vec_model.eval()
         with torch.no_grad():
-            z = self.wav2vec_model.feature_extractor(x.squeeze())
+            z = self.wav2vec_model.feature_extractor(src_tokens.squeeze())
             c = self.wav2vec_model.feature_aggregator(z).permute(0,2,1)
-        subsample_factor = x.shape[1]/c.shape[1]
+        subsample_factor = src_tokens.shape[1]/c.shape[1]
         src_lengths = torch.ceil(src_lengths /subsample_factor).type(torch.int64)
         src_lengths = torch.min(torch.tensor(c.shape[1]).to(src_lengths.device),src_lengths)
         d =  super().forward(c, src_lengths, **kwargs)
@@ -66,6 +66,22 @@ class ASRTransformerEncoder(VGGTransformerEncoder):
             encoder_embedding=None,  # B x T x C
             encoder_states=None,  # List[T x B x C]
         )
+
+    def reorder_encoder_out(self, encoder_out:EncoderOut, new_order):
+        if encoder_out.encoder_padding_mask is not None:
+            epm = encoder_out.encoder_padding_mask.index_select(1, new_order)
+        else:
+            epm = encoder_out.encoder_padding_mask
+
+        return EncoderOut(
+            encoder_out=encoder_out.encoder_out.index_select(
+            1, new_order
+        ),  # T x B x C
+            encoder_padding_mask=epm,  # B x T
+            encoder_embedding=None,  # B x T x C
+            encoder_states=None,  # List[T x B x C]
+        )
+
 
 class ASRTransformerDecoderWrapper(TransformerDecoder):
     def __init__(self, dictionary):
@@ -109,12 +125,12 @@ class VGGTransformerModel(FairseqEncoderDecoderModel):
     @classmethod
     def build_decoder(cls, args, task):
         decoder = ASRTransformerDecoderWrapper(task.target_dictionary)
-        print('loading language model checkpoint')
-        checkpoint_file = '/home/users/t/tilo-himmelsbach/data/fairseq-data/checkpoints/lm_librispeech/checkpoint20.pt'
-        # checkpoint_file = '/tmp/checkpoint20.pt'
-        state = checkpoint_utils.load_checkpoint_to_cpu(checkpoint_file, {'no_encoder_attn':False})
-        decoder_layers = {k.replace('decoder.',''):v for k,v in state['model'].items()}
-        decoder.load_state_dict(decoder_layers,strict=False)
+        # print('loading language model checkpoint')
+        # checkpoint_file = '/home/users/t/tilo-himmelsbach/data/fairseq-data/checkpoints/lm_librispeech/checkpoint20.pt'
+        # # checkpoint_file = '/tmp/checkpoint20.pt'
+        # state = checkpoint_utils.load_checkpoint_to_cpu(checkpoint_file, {'no_encoder_attn':False})
+        # decoder_layers = {k.replace('decoder.',''):v for k,v in state['model'].items()}
+        # decoder.load_state_dict(decoder_layers,strict=False)
 
         # decoder = ConvTransformerDecoder(dictionary=task.target_dictionary,
         #                                  embed_dim=args.tgt_embed_dim,
