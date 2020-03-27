@@ -2,27 +2,18 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-from argparse import Namespace
 
-import torch
-import torch.nn as nn
-from fairseq import checkpoint_utils
 from fairseq.models import (
     FairseqEncoderDecoderModel,
     register_model,
     register_model_architecture,
 )
-from fairseq.models.fairseq_encoder import EncoderOut
-from fairseq.models.transformer import TransformerDecoder, Embedding
-from fairseq.models.transformer_lm import base_lm_architecture, \
-    DEFAULT_MAX_TARGET_POSITIONS
-from fairseq.models.wav2vec import Wav2VecModel
 from speech_recognition.models.asr_models_common import DEFAULT_DEC_CONV_CONFIG
 from speech_recognition.models.conv_transformer_decoder import ConvTransformerDecoder, \
     add_decoder_args
 from speech_recognition.models.vgg_transformer_encoder import add_encoder_args, \
     VGGTransformerEncoder, DEFAULT_ENC_VGGBLOCK_CONFIG, DEFAULT_ENC_TRANSFORMER_CONFIG
-import os
+
 
 @register_model("asr_vggtransformer")
 class VGGTransformerModel(FairseqEncoderDecoderModel):
@@ -219,4 +210,21 @@ def vggtransformer_66(args):
     args.conv_dec_config = getattr(args, "conv_dec_config", "((256, 3, True),) * 4")
     args.transformer_dec_config = getattr(
         args, "transformer_dec_config", "((512, 8, 2048, True, 0.15, 0.15, 0.15),) * 6"
+    )
+
+@register_model_architecture("asr_vggtransformer", "vggtransformer_33")
+def vggtransformer_33(args):
+    args.input_feat_per_channel = getattr(args, "input_feat_per_channel", 80)
+    args.vggblock_enc_config = getattr(
+        args, "vggblock_enc_config", "[(64, 3, 2, 2, True), (128, 3, 2, 2, True)]"
+    )
+    args.transformer_enc_config = getattr(
+        args, "transformer_enc_config", "((512, 8, 2048, True, 0.15, 0.15, 0.15),) * 3"
+    )
+
+    args.enc_output_dim = getattr(args, "enc_output_dim", 512)
+    args.tgt_embed_dim = getattr(args, "tgt_embed_dim", 512)
+    args.conv_dec_config = getattr(args, "conv_dec_config", "((256, 3, True),) * 4")
+    args.transformer_dec_config = getattr(
+        args, "transformer_dec_config", "((512, 8, 2048, True, 0.15, 0.15, 0.15),) * 3"
     )
