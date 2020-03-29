@@ -47,7 +47,8 @@ def get_asr_dataset_from_json(data_json_path, tgt_dict,feature_type='fbank'):
         HOME = os.environ['HOME']
         def alter_datum(d):
             if hostname == 'tilo-ThinkPad-X1-Carbon-6th':
-                d[1]['input']['path']=d[1]['input']['path'].replace('/content/librispeech_raw',HOME+'/data/asr_data')
+                # d[1]['input']['path']=d[1]['input']['path'].replace('/content/librispeech_raw',HOME+'/data/asr_data')
+                d[1]['input']['path']=d[1]['input']['path'].replace('/home/users/t/tilo-himmelsbach/data/asr_data',HOME+'/data/asr_data')
             elif 'gpu' in hostname:
                 pass
             else:
@@ -117,7 +118,7 @@ class SpeechRecognitionTask(FairseqTask):
             split (str): name of the split (e.g., train, valid, test)
         """
         data_json_path = os.path.join(self.args.data, "{}.json".format(split))
-        feature_type = 'wave' if 'wav2vec' in self.args.arch else 'fbank'
+        feature_type = 'wave' if hasattr(self.args,'arch') and 'wav2vec' in self.args.arch else 'fbank'
         self.datasets[split] = get_asr_dataset_from_json(data_json_path, self.tgt_dict,feature_type)
 
     @property
